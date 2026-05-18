@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jamovi para Paula</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #5b7bf5;
+            --secondary: #8b5cf6;
+            --accent: #6d28d9;
+            --success: #10b981;
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --text: #f1f5f9;
+            --text-muted: #cbd5e1;
+            --border: #475569;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            padding: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(91, 123, 245, 0.3);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 800;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            color: white;
+        }
+
+        .header-badges {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            background: rgba(255,255,255,0.25);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 250px 1fr 320px;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            min-height: calc(100vh - 100px);
+        }
+
+        .sidebar {
+            position: sticky;
+            top: 100px;
+            height: fit-content;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 3px;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 15px 0 8px 0;
+        }
+
+        .module {
+            background: var(--surface-light);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+        }
+
+        .module:hover {
+            border-color: var(--primary);
+            transform: translateX(3px);
+        }
+
+        .module.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .module-label {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .module-icon {
+            font-size: 14px;
+        }
+
+        .content {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 30px;
+            max-height: calc(100vh - 140px);
+            overflow-y: auto;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .content h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .paula-intro {
+            background: rgba(91, 123, 245, 0.1);
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        .content h2 {
+            font-size: 16px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: var(--primary);
+            border-bottom: 2px solid var(--secondary);
+            padding-bottom: 6px;
+        }
+
+        .explanation {
+            background: rgba(91, 123, 245, 0.1);
+            border-left: 3px solid var(--primary);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .card {
+            background: rgba(91, 123, 245, 0.1);
+            border: 2px solid var(--primary);
+            padding: 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(91, 123, 245, 0.2);
+        }
+
+        .card-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .card-title {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+
+        .card-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .exercise-section {
+            background: rgba(91, 123, 245, 0.1);
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .exercise-title {
+            color: var(--secondary);
+            margin-bottom: 10px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .option {
+            background: var(--surface);
+            padding: 10px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+            font-size: 12px;
+        }
+
+        .option:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .option.correct {
+            background: var(--success);
+            color: white;
+        }
+
+        .option.incorrect {
+            background: #ef4444;
+            color: white;
+        }
+
+        .feedback {
+            margin-top: 8px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 11px;
+        }
+
+        .feedback.success {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+        }
+
+        .feedback.error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+
+        .chat-sidebar {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 100px;
+            height: calc(100vh - 140px);
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px 10px 0 0;
+            font-weight: 700;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message {
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            max-width: 100%;
+            word-wrap: break-word;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.paula {
+            background: rgba(91, 123, 245, 0.2);
+            border-left: 3px solid var(--primary);
+            align-self: flex-start;
+        }
+
+        .message.profesor {
+            background: rgba(16, 185, 129, 0.2);
+            border-left: 3px solid var(--success);
+            align-self: flex-end;
+        }
+
+        .chat-input-area {
+            padding: 12px;
+            border-top: 2px solid var(--border);
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            resize: none;
+            max-height: 60px;
+        }
+
+        .chat-send {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        @media (max-width: 1024px) {
+            .main-container {
+                grid-template-columns: 200px 1fr;
+                gap: 15px;
+            }
+
+            .chat-sidebar {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: relative;
+                top: auto;
+            }
+
+            .chat-sidebar {
+                position: fixed;
+                bottom: 0;
+                right: 0;
+                width: 100%;
+                height: 300px;
+                border-radius: 12px 12px 0 0;
+            }
+
+            .content {
+                margin-bottom: 320px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">📊 jamovi para Paula</div>
+            <div class="header-badges">
+                <div class="badge">👋 Paula estudia</div>
+                <div class="badge">⏱️ <span id="tiempoTotal">0s</span></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content" id="contenido"></main>
+        
+        <aside class="chat-sidebar">
+            <div class="chat-header">💬 Chat con el Profesor</div>
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input-area">
+                <textarea class="chat-input" id="chatInput" placeholder="Pregunta aquí..." rows="2"></textarea>
+                <button class="chat-send" onclick="enviarMensaje()">📤</button>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        // ===== CONFIGURACIÓN FIREBASE =====
+        const firebaseConfig = {
+            apiKey: "AIzaSyBLqZCJYy7Cy5xJ8vQ9vWuH2nK4pXmJkL0",
+            authDomain: "jamovi-paula.firebaseapp.com",
+            databaseURL: "https://jamovi-paula-default-rtdb.firebaseio.com",
+            projectId: "jamovi-paula",
+            storageBucket: "jamovi-paula.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:abcdef1234567890"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // ===== GENERAR ID ÚNICO =====
+        let paulaId = localStorage.getItem('paula_id');
+        if (!paulaId) {
+            paulaId = 'paula_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('paula_id', paulaId);
+        }
+
+        let tiempoInicio = Date.now();
+        let moduloActual = 0;
+        let preguntasRespondidas = 0;
+        let aciertos = 0;
+
+        // ===== ACTUALIZAR TIEMPO =====
+        setInterval(() => {
+            const segundos = Math.floor((Date.now() - tiempoInicio) / 1000);
+            const minutos = Math.floor(segundos / 60);
+            const tiempo = minutos > 0 ? `${minutos}m ${segundos % 60}s` : `${segundos}s`;
+            document.getElementById('tiempoTotal').textContent = tiempo;
+
+            // Guardar en Firebase
+            db.ref('paula/' + paulaId + '/sesion').set({
+                tiempoTotal: segundos,
+                moduloActual: moduloActual,
+                preguntasRespondidas: preguntasRespondidas,
+                aciertos: aciertos,
+                timestamp: new Date().toISOString(),
+                ultimaActividad: new Date().toLocaleTimeString()
+            });
+        }, 1000);
+
+        // ===== MÓDULOS =====
+        const modulos = [
+            {
+                numero: 1,
+                titulo: "Escalas de Medida",
+                nivel: "Principiante",
+                subtitulo: "Nominal, Ordinal, Intervalo - Identificación del tipo de variable",
+                contenido: `
+                    <h2>¿Qué son las escalas de medida?</h2>
+                    <div class="explanation">
+                        Las escalas de medida clasifican tus variables. Determinar la escala correcta es FUNDAMENTAL porque define qué análisis puedes hacer en jamovi.
+                    </div>
+                    <h2>Las 4 escalas principales</h2>
+                    <div class="cards-grid">
+                        <div class="card">
+                            <div class="card-icon">🏷️</div>
+                            <div class="card-title">Nominal</div>
+                            <div class="card-desc"><strong>Sin orden.</strong> Categorías como género (M/F), carrera, diagnóstico.</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon">📊</div>
+                            <div class="card-title">Ordinal</div>
+                            <div class="card-desc"><strong>Con orden.</strong> Likert (1-5), satisfacción (bajo/medio/alto).</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon">📏</div>
+                            <div class="card-title">Intervalo</div>
+                            <div class="card-desc"><strong>Equidistantes.</strong> Temperatura, CI, escalas estandarizadas.</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon">🎯</div>
+                            <div class="card-title">Razón</div>
+                            <div class="card-desc"><strong>Intervalo + cero absoluto.</strong> Edad, peso, ingresos.</div>
+                        </div>
+                    </div>
+                `,
+                ejercicios: [
+                    {
+                        pregunta: "Género (M/F) es escala:",
+                        opciones: [
+                            { texto: "Nominal", correcto: true },
+                            { texto: "Ordinal", correcto: false },
+                            { texto: "Intervalo", correcto: false }
+                        ]
+                    },
+                    {
+                        pregunta: "Escala Likert (Muy en desacuerdo - Muy de acuerdo) es:",
+                        opciones: [
+                            { texto: "Nominal", correcto: false },
+                            { texto: "Ordinal", correcto: true },
+                            { texto: "Intervalo", correcto: false }
+                        ]
+                    }
+                ]
+            },
+            {
+                numero: 2,
+                titulo: "Medidas de Tendencia Central",
+                nivel: "Principiante",
+                subtitulo: "Media, Mediana, Moda - Interpretación en contextos reales",
+                contenido: `
+                    <h2>Las 3 medidas de tendencia central</h2>
+                    <div class="cards-grid">
+                        <div class="card">
+                            <div class="card-icon">➕</div>
+                            <div class="card-title">Media</div>
+                            <div class="card-desc">Suma / cantidad. Sensible a outliers.</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon">📍</div>
+                            <div class="card-title">Mediana</div>
+                            <div class="card-desc">Valor del medio. Robusta con outliers.</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon">🔄</div>
+                            <div class="card-title">Moda</div>
+                            <div class="card-desc">Valor que más se repite. Para categorías.</div>
+                        </div>
+                    </div>
+                `,
+                ejercicios: [
+                    {
+                        pregunta: "Con datos que tienen outliers, ¿cuál es mejor?",
+                        opciones: [
+                            { texto: "Media", correcto: false },
+                            { texto: "Mediana", correcto: true },
+                            { texto: "Moda", correcto: false }
+                        ]
+                    }
+                ]
+            },
+            {
+                numero: 3,
+                titulo: "Medidas de Dispersión",
+                nivel: "Principiante",
+                subtitulo: "Varianza, Desviación Estándar, Rango",
+                contenido: `
+                    <h2>Las 4 medidas de dispersión</h2>
+                    <div class="cards-grid">
+                        <div class="card">
+                            <div class="card-icon">📏</div>
+                            <div class="card-title">Rango</div>
+                            <div class="card-desc">Máximo - Mínimo. Visión rápida.</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon">📊</div>
+                            <div class="card-title">Varianza (S²)</div>
+                            <div class="card-desc">Promedio desviaciones al cuadrado.</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon">⭐</div>
+                            <div class="card-title">Desv. Estándar (S)</div>
+                            <div class="card-desc"><strong>LA MÁS IMPORTANTE.</strong> √Varianza.</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon">🔄</div>
+                            <div class="card-title">CV</div>
+                            <div class="card-desc">Compara variables diferentes.</div>
+                        </div>
+                    </div>
+                `,
+                ejercicios: [
+                    {
+                        pregunta: "¿Cuál es la MÁS USADA?",
+                        opciones: [
+                            { texto: "Rango", correcto: false },
+                            { texto: "Varianza", correcto: false },
+                            { texto: "Desviación Estándar", correcto: true }
+                        ]
+                    }
+                ]
+            },
+            {
+                numero: 4,
+                titulo: "Medidas de Forma",
+                nivel: "Intermedio",
+                subtitulo: "Asimetría y Curtosis",
+                contenido: `<h2>Medidas de forma</h2><div class="explanation">Describen la forma visual de tus datos. ¿Son simétricos? ¿Sesgados? ¿Puntiagudos?</div>`,
+                ejercicios: []
+            },
+            {
+                numero: 5,
+                titulo: "Análisis de Datos",
+                nivel: "Intermedio",
+                subtitulo: "Interpretación completa",
+                contenido: `<h2>Análisis e interpretación</h2><div class="explanation">Pasos para analizar tus datos: media, mediana, dispersión, forma, outliers.</div>`,
+                ejercicios: []
+            },
+            {
+                numero: 6,
+                titulo: "Pruebas t",
+                nivel: "Avanzado",
+                subtitulo: "Una muestra, independientes, pareadas",
+                contenido: `<h2>Las 3 versiones de t de Student</h2><div class="explanation">t una muestra, t independientes, t pareada. Cada una se usa en situaciones diferentes.</div>`,
+                ejercicios: []
+            },
+            {
+                numero: 7,
+                titulo: "No-Paramétricas",
+                nivel: "Avanzado",
+                subtitulo: "Mann-Whitney, Wilcoxon, Kruskal-Wallis",
+                contenido: `<h2>Pruebas no-paramétricas</h2><div class="explanation">Cuando los datos NO son normales. Alternativas robustas a las pruebas t y ANOVA.</div>`,
+                ejercicios: []
+            }
+        ];
+
+        function renderSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            let html = '';
+            let niveles = ['Principiante', 'Intermedio', 'Avanzado'];
+            
+            niveles.forEach(nivel => {
+                html += `<div class="section-title">${nivel}</div>`;
+                modulos.filter(m => m.nivel === nivel).forEach((mod, idx) => {
+                    const index = modulos.indexOf(mod);
+                    html += `
+                        <div class="module ${index === 0 ? 'active' : ''}" onclick="mostrarModulo(${index})">
+                            <div class="module-label">
+                                <span class="module-icon">${['🏷️', '📊', '📉', '⚖️', '🔍', '✔️', '🔀'][index]}</span>
+                                Módulo ${mod.numero}
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+
+            sidebar.innerHTML = html;
+        }
+
+        function mostrarModulo(idx) {
+            moduloActual = idx;
+            const mod = modulos[idx];
+
+            document.querySelectorAll('.module').forEach((m, i) => {
+                m.classList.toggle('active', i === idx);
+            });
+
+            let html = `
+                <h1>${mod.titulo}</h1>
+                <div class="paula-intro">
+                    <strong>📚 Paula:</strong> ${mod.subtitulo} 💪
+                </div>
+                ${mod.contenido}
+            `;
+
+            if (mod.ejercicios && mod.ejercicios.length > 0) {
+                html += `<h2>📝 Práctica</h2>`;
+                mod.ejercicios.forEach((ej, i) => {
+                    const id = `ej-${idx}-${i}`;
+                    html += `<div class="exercise-section">
+                        <div class="exercise-title">❓ ${ej.pregunta}</div>
+                        <div class="options">`;
+                    ej.opciones.forEach((opt, j) => {
+                        html += `<div class="option" onclick="responder('${id}', ${j}, ${opt.correcto}, this)">
+                            ${opt.texto}
+                        </div>`;
+                    });
+                    html += `<div class="feedback" id="${id}-feedback" style="display:none;"></div></div></div>`;
+                });
+            }
+
+            html += `<div class="btn-group">
+                <button class="btn btn-primary" onclick="mostrarModulo(${Math.max(0, idx - 1)})" ${idx === 0 ? 'disabled' : ''}>← Anterior</button>
+                <span style="font-size: 12px; color: var(--text-muted);">Módulo ${idx + 1}/${modulos.length}</span>
+                <button class="btn btn-primary" onclick="mostrarModulo(${Math.min(modulos.length - 1, idx + 1)})" ${idx === modulos.length - 1 ? 'disabled' : ''}>Siguiente →</button>
+            </div>`;
+
+            document.getElementById('contenido').innerHTML = html;
+        }
+
+        function responder(id, respuesta, correcto, element) {
+            const opciones = element.parentElement.querySelectorAll('.option');
+            opciones.forEach(opt => opt.style.pointerEvents = 'none');
+
+            const feedback = document.getElementById(id + '-feedback');
+            feedback.style.display = 'block';
+            preguntasRespondidas++;
+
+            if (correcto) {
+                element.classList.add('correct');
+                feedback.className = 'feedback success';
+                feedback.innerHTML = '✅ ¡Correcto! ¡Excelente!';
+                aciertos++;
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'feedback error';
+                feedback.innerHTML = '❌ Incorrecto. Revisa y reintenta.';
+            }
+
+            // Guardar respuesta en Firebase
+            db.ref('paula/' + paulaId + '/respuestas').push({
+                pregunta: id,
+                correcta: correcto,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        function enviarMensaje() {
+            const input = document.getElementById('chatInput');
+            const texto = input.value.trim();
+            if (!texto) return;
+
+            const chatMessages = document.getElementById('chatMessages');
+            
+            // Mensaje de Paula
+            const msgPaula = document.createElement('div');
+            msgPaula.className = 'message paula';
+            msgPaula.textContent = texto;
+            chatMessages.appendChild(msgPaula);
+
+            // Guardar en Firebase
+            db.ref('paula/' + paulaId + '/chat').push({
+                remitente: 'paula',
+                texto: texto,
+                timestamp: new Date().toISOString()
+            });
+
+            input.value = '';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // Respuesta automática
+            setTimeout(() => {
+                const respuestas = [
+                    '¿Puedes desarrollar más tu pregunta?',
+                    '¡Excelente pregunta!',
+                    'Es un concepto importante. Mira esto...',
+                    'Tienes razón, pero hay un detalle...',
+                    '¡Veo que estás progresando bien!'
+                ];
+                const msgProf = document.createElement('div');
+                msgProf.className = 'message profesor';
+                msgProf.textContent = respuestas[Math.floor(Math.random() * respuestas.length)];
+                chatMessages.appendChild(msgProf);
+
+                db.ref('paula/' + paulaId + '/chat').push({
+                    remitente: 'profesor',
+                    texto: msgProf.textContent,
+                    timestamp: new Date().toISOString()
+                });
+
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }, 1000);
+        }
+
+        // Inicializar
+        renderSidebar();
+        mostrarModulo(0);
+
+        // Permitir Enter en chat
+        document.getElementById('chatInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                enviarMensaje();
+            }
+        });
+
+        console.log('Paula ID:', paulaId);
+    </script>
+</body>
+</html>
