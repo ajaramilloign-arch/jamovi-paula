@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Seguimiento - Paula</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #5b7bf5;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --text: #f1f5f9;
+            --text-muted: #cbd5e1;
+            --border: #475569;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            padding: 25px 0;
+            margin-bottom: 30px;
+            border-radius: 12px;
+            color: white;
+            text-align: center;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 25px;
+        }
+        .card-title {
+            color: var(--primary);
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+        }
+        .card-value {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        .card-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .section {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+        .log-item {
+            background: rgba(91, 123, 245, 0.05);
+            border-left: 3px solid var(--primary);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            font-size: 13px;
+        }
+        .log-time {
+            color: var(--text-muted);
+            font-size: 11px;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+        .progress-bar {
+            background: var(--border);
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        .progress-fill {
+            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Panel de Seguimiento - Paula</h1>
+            <p>Datos sincronizados en tiempo real</p>
+        </header>
+
+        <div class="grid">
+            <div class="card">
+                <div class="card-title">⏱️ Tiempo en línea</div>
+                <div class="card-value" id="tiempoOnline">0m 0s</div>
+                <div class="card-sub">Última actividad: <span id="ultimaActividad">---</span></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📍 Módulo Actual</div>
+                <div class="card-value" id="moduloActual">-/-</div>
+                <div style="margin-top: 15px;">
+                    <div class="progress-bar"><div class="progress-fill" id="progresoBarra"></div></div>
+                    <span id="porcentajeProg" style="font-size: 12px; color: var(--text-muted);">0%</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">❓ Preguntas Respondidas</div>
+                <div class="card-value" id="totalPreguntas">0</div>
+                <div class="card-sub">Aciertos: <span id="aciertos" style="color: var(--success); font-weight: 800;">0</span></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📈 Precisión</div>
+                <div class="card-value" id="precision">0%</div>
+                <div class="card-sub">Respuestas correctas / Total</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">📋 Historial de Actividad</div>
+            <div id="historialActividad" class="loading">Esperando datos de Paula...</div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">✅ Historial de Respuestas</div>
+            <div id="historialRespuestas" class="loading">Esperando respuestas...</div>
+        </div>
+    </div>
+
+    <script>
+        function actualizarDatos() {
+            const historial = JSON.parse(localStorage.getItem('paula_historial') || '[]');
+            
+            if (historial.length === 0) {
+                document.getElementById('historialActividad').innerHTML = '<div class="loading">Esperando que Paula comience a estudiar...</div>';
+                return;
+            }
+
+            const sesiones = historial.filter(h => h.tipo === 'sesion');
+            const respuestas = historial.filter(h => h.tipo === 'respuesta');
+            
+            if (sesiones.length > 0) {
+                const ultima = sesiones[sesiones.length - 1];
+                const minutos = Math.floor(ultima.tiempoTotal / 60);
+                const segundos = ultima.tiempoTotal % 60;
+                document.getElementById('tiempoOnline').textContent = `${minutos}m ${segundos}s`;
+                
+                const modulo = ultima.moduloActual + 1;
+                const porcentaje = Math.round((modulo / 7) * 100);
+                document.getElementById('moduloActual').textContent = `${modulo}/7`;
+                document.getElementById('progresoBarra').style.width = porcentaje + '%';
+                document.getElementById('porcentajeProg').textContent = porcentaje + '%';
+                
+                document.getElementById('totalPreguntas').textContent = ultima.preguntasRespondidas;
+                document.getElementById('aciertos').textContent = ultima.aciertos;
+                
+                const precision = ultima.preguntasRespondidas > 0 
+                    ? Math.round((ultima.aciertos / ultima.preguntasRespondidas) * 100)
+                    : 0;
+                document.getElementById('precision').textContent = precision + '%';
+            }
+
+            let historialHTML = '';
+            sesiones.slice(-10).reverse().forEach(sesion => {
+                historialHTML += `
+                    <div class="log-item">
+                        <span class="log-time">${new Date(sesion.timestamp).toLocaleString()}</span>
+                        <strong>🎯 Módulo ${sesion.moduloActual + 1}/7 | Preguntas: ${sesion.preguntasRespondidas}</strong>
+                    </div>
+                `;
+            });
+            document.getElementById('historialActividad').innerHTML = historialHTML || '<div class="loading">Sin actividad</div>';
+
+            let respuestasHTML = '';
+            respuestas.slice(-10).reverse().forEach((resp, idx) => {
+                const icon = resp.correcta ? '✅' : '❌';
+                respuestasHTML += `
+                    <div class="log-item">
+                        <span class="log-time">${new Date(resp.timestamp).toLocaleTimeString()}</span>
+                        <strong>${icon} ${resp.correcta ? 'Correcta' : 'Incorrecta'}</strong>
+                    </div>
+                `;
+            });
+            document.getElementById('historialRespuestas').innerHTML = respuestasHTML || '<div class="loading">Sin respuestas</div>';
+        }
+
+        actualizarDatos();
+        setInterval(actualizarDatos, 2000);
+        window.addEventListener('storage', actualizarDatos);
+    </script>
+</body>
+</html>
