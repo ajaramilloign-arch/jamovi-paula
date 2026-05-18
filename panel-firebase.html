@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Seguimiento - Paula</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #5b7bf5;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --text: #f1f5f9;
+            --text-muted: #cbd5e1;
+            --border: #475569;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            padding: 25px 0;
+            margin-bottom: 30px;
+            border-radius: 12px;
+            color: white;
+            text-align: center;
+        }
+
+        header h1 {
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 12px 30px rgba(91, 123, 245, 0.2);
+        }
+
+        .card-title {
+            color: var(--primary);
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-value {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .card-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .status-online {
+            color: var(--success);
+        }
+
+        .status-offline {
+            color: var(--danger);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .status-badge.offline {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+
+        .section {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 2px solid var(--secondary);
+            padding-bottom: 15px;
+        }
+
+        .log-item {
+            background: rgba(91, 123, 245, 0.05);
+            border-left: 3px solid var(--primary);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            font-size: 13px;
+        }
+
+        .log-time {
+            color: var(--text-muted);
+            font-size: 11px;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .chat-section {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .message-item {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+
+        .message-paula {
+            background: rgba(91, 123, 245, 0.2);
+            border-left: 3px solid var(--primary);
+        }
+
+        .message-profesor {
+            background: rgba(16, 185, 129, 0.2);
+            border-left: 3px solid var(--success);
+        }
+
+        .message-time {
+            font-size: 10px;
+            color: var(--text-muted);
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .message-sender {
+            font-weight: 700;
+            margin-bottom: 3px;
+            font-size: 11px;
+        }
+
+        .progress-bar {
+            background: var(--border);
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat {
+            background: rgba(91, 123, 245, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        footer {
+            text-align: center;
+            color: var(--text-muted);
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 2px solid var(--border);
+            font-size: 12px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Panel de Seguimiento de Paula</h1>
+            <p>Datos en tiempo real desde Firebase</p>
+        </header>
+
+        <!-- TARJETAS DE ESTADÍSTICAS -->
+        <div class="grid">
+            <div class="card">
+                <div class="card-title">⏱️ Tiempo en línea</div>
+                <div class="card-value" id="tiempoOnline">0m 0s</div>
+                <div class="card-sub">Última actividad: <span id="ultimaActividad">---</span></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📍 Módulo Actual</div>
+                <div class="card-value" id="moduloActual">-/-</div>
+                <div class="card-sub">
+                    <div class="progress-bar"><div class="progress-fill" id="progresoBarra"></div></div>
+                    <span id="porcentajeProg">0%</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">❓ Preguntas Respondidas</div>
+                <div class="card-value" id="totalPreguntas">0</div>
+                <div class="card-sub">Aciertos: <span id="aciertos" style="color: var(--success); font-weight: 800;">0</span> | Precisión: <span id="precision">0%</span></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🟢 Estado</div>
+                <div style="margin-top: 15px;">
+                    <span class="status-badge" id="statusBadge">En línea</span>
+                </div>
+                <div class="card-sub" style="margin-top: 15px;">Paula ID: <span id="paulaId" style="font-family: monospace; font-size: 10px;">---</span></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📈 Desempeño</div>
+                <div class="stats-grid">
+                    <div class="stat">
+                        <div class="stat-label">Respuestas</div>
+                        <div class="stat-value" id="respuestasTotal">0</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Correctas</div>
+                        <div class="stat-value" style="color: var(--success);" id="correctasTotal">0</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Incorrectas</div>
+                        <div class="stat-value" style="color: var(--danger);" id="incorrectasTotal">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">💬 Mensajes en Chat</div>
+                <div class="card-value" id="totalMensajes">0</div>
+                <div class="card-sub">De Paula: <span id="mensajesPaula">0</span> | Del Profesor: <span id="mensajesProfesor">0</span></div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: HISTORIAL DE ACTIVIDAD -->
+        <div class="section">
+            <div class="section-title">📋 Historial de Actividad</div>
+            <div id="historialActividad" class="loading">Esperando datos de Paula...</div>
+        </div>
+
+        <!-- SECCIÓN: HISTORIAL DE RESPUESTAS -->
+        <div class="section">
+            <div class="section-title">✅ Historial de Respuestas</div>
+            <div id="historialRespuestas" class="loading">Esperando respuestas...</div>
+        </div>
+
+        <!-- SECCIÓN: CHAT -->
+        <div class="section">
+            <div class="section-title">💬 Chat - Mensajes</div>
+            <div class="chat-section" id="chatHistorial">
+                <div class="loading">Esperando mensajes...</div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Sistema de Seguimiento Firebase | Actualización en tiempo real</p>
+        <p style="margin-top: 10px;">Los datos se sincronizan automáticamente desde la herramienta de Paula</p>
+    </footer>
+
+    <script>
+        // Configuración Firebase (IGUAL a index-firebase.html)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBLqZCJYy7Cy5xJ8vQ9vWuH2nK4pXmJkL0",
+            authDomain: "jamovi-paula.firebaseapp.com",
+            databaseURL: "https://jamovi-paula-default-rtdb.firebaseio.com",
+            projectId: "jamovi-paula",
+            storageBucket: "jamovi-paula.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:abcdef1234567890"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Obtener Paula ID del URL
+        const params = new URLSearchParams(window.location.search);
+        let paulaId = params.get('paula_id') || localStorage.getItem('paula_id_vista');
+
+        // Listener en tiempo real
+        function escucharDatos() {
+            if (!paulaId) {
+                // Mostrar lista de Paulas activas
+                db.ref('paula').on('value', (snapshot) => {
+                    const paulas = snapshot.val();
+                    if (paulas) {
+                        const ids = Object.keys(paulas);
+                        if (ids.length > 0) {
+                            paulaId = ids[ids.length - 1]; // Última Paula
+                            localStorage.setItem('paula_id_vista', paulaId);
+                            document.getElementById('paulaId').textContent = paulaId.substring(0, 20) + '...';
+                            escucharDatos();
+                        }
+                    }
+                });
+                return;
+            }
+
+            // Escuchar sesión
+            db.ref('paula/' + paulaId + '/sesion').on('value', (snapshot) => {
+                const sesion = snapshot.val();
+                if (sesion) {
+                    const segundos = sesion.tiempoTotal;
+                    const minutos = Math.floor(segundos / 60);
+                    document.getElementById('tiempoOnline').textContent = `${minutos}m ${segundos % 60}s`;
+                    document.getElementById('ultimaActividad').textContent = sesion.ultimaActividad;
+                    
+                    const modulo = sesion.moduloActual + 1;
+                    const porcentaje = Math.round((modulo / 7) * 100);
+                    document.getElementById('moduloActual').textContent = `${modulo}/7`;
+                    document.getElementById('progresoBarra').style.width = porcentaje + '%';
+                    document.getElementById('porcentajeProg').textContent = porcentaje + '%';
+                    
+                    document.getElementById('totalPreguntas').textContent = sesion.preguntasRespondidas;
+                    document.getElementById('aciertos').textContent = sesion.aciertos;
+                    const precision = sesion.preguntasRespondidas > 0 
+                        ? Math.round((sesion.aciertos / sesion.preguntasRespondidas) * 100) 
+                        : 0;
+                    document.getElementById('precision').textContent = precision + '%';
+                    
+                    document.getElementById('respuestasTotal').textContent = sesion.preguntasRespondidas;
+                    document.getElementById('correctasTotal').textContent = sesion.aciertos;
+                    document.getElementById('incorrectasTotal').textContent = sesion.preguntasRespondidas - sesion.aciertos;
+                    
+                    document.getElementById('statusBadge').textContent = 'En línea';
+                    document.getElementById('statusBadge').className = 'status-badge';
+                    document.getElementById('paulaId').textContent = paulaId.substring(0, 20) + '...';
+                }
+            });
+
+            // Escuchar respuestas
+            db.ref('paula/' + paulaId + '/respuestas').on('value', (snapshot) => {
+                const respuestas = snapshot.val() || {};
+                const items = Object.values(respuestas);
+                
+                let html = '';
+                items.slice(-10).reverse().forEach((resp, idx) => {
+                    const icon = resp.correcta ? '✅' : '❌';
+                    const estado = resp.correcta ? 'Correcta' : 'Incorrecta';
+                    html += `
+                        <div class="log-item">
+                            <span class="log-time">${new Date(resp.timestamp).toLocaleTimeString()}</span>
+                            <strong>${icon} Pregunta: ${estado}</strong>
+                        </div>
+                    `;
+                });
+                
+                if (html === '') {
+                    html = '<div class="loading">Sin respuestas aún</div>';
+                }
+                document.getElementById('historialRespuestas').innerHTML = html;
+            });
+
+            // Escuchar chat
+            db.ref('paula/' + paulaId + '/chat').on('value', (snapshot) => {
+                const chat = snapshot.val() || {};
+                const items = Object.values(chat);
+                
+                document.getElementById('totalMensajes').textContent = items.length;
+                const mensajesPaula = items.filter(m => m.remitente === 'paula').length;
+                const mensajesProfesor = items.filter(m => m.remitente === 'profesor').length;
+                document.getElementById('mensajesPaula').textContent = mensajesPaula;
+                document.getElementById('mensajesProfesor').textContent = mensajesProfesor;
+                
+                let html = '';
+                items.slice(-15).reverse().forEach(msg => {
+                    const clase = msg.remitente === 'paula' ? 'message-paula' : 'message-profesor';
+                    const sender = msg.remitente === 'paula' ? '👤 Paula' : '👨‍🏫 Profesor';
+                    html += `
+                        <div class="message-item ${clase}">
+                            <span class="message-time">${new Date(msg.timestamp).toLocaleTimeString()}</span>
+                            <div class="message-sender">${sender}</div>
+                            ${msg.texto}
+                        </div>
+                    `;
+                });
+                
+                if (html === '') {
+                    html = '<div class="loading">Sin mensajes aún</div>';
+                }
+                document.getElementById('chatHistorial').innerHTML = html;
+            });
+
+            // Historial de actividad
+            db.ref('paula/' + paulaId).on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data && data.sesion) {
+                    const sesion = data.sesion;
+                    let html = `
+                        <div class="log-item">
+                            <span class="log-time">${new Date(sesion.timestamp).toLocaleString()}</span>
+                            <strong>🎯 Sesión activa</strong>
+                            <br>Módulo: ${sesion.moduloActual + 1}/7 | Preguntas: ${sesion.preguntasRespondidas}
+                        </div>
+                    `;
+                    
+                    const respuestas = data.respuestas || {};
+                    Object.values(respuestas).slice(-5).reverse().forEach(resp => {
+                        const icon = resp.correcta ? '✅' : '❌';
+                        html += `
+                            <div class="log-item">
+                                <span class="log-time">${new Date(resp.timestamp).toLocaleTimeString()}</span>
+                                <strong>${icon} Respuesta ${resp.correcta ? 'correcta' : 'incorrecta'}</strong>
+                            </div>
+                        `;
+                    });
+                    
+                    document.getElementById('historialActividad').innerHTML = html;
+                }
+            });
+        }
+
+        escucharDatos();
+    </script>
+</body>
+</html>
